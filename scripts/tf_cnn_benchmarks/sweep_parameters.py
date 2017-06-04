@@ -4,16 +4,27 @@ import subprocess
 def main(command, all_num_gpus, all_batch_sizes, output_folder):
   subprocess.call("rm -rf %s; mkdir -p %s" % (output_folder, output_folder),
                   shell=True)
+  throughputs = dict()
   for batch_size in all_batch_sizes:
     subprocess.call("mkdir -p %s/batch_size=%d" % (output_folder, batch_size),
                     shell=True)
     for num_gpus in all_num_gpus:
-      subprocess.call("echo \"%s --batch_size=%d --num_gpus=%d\n\" >> %s/batch_size=%d/gpus=%d.out" %
-                      (command, batch_size, num_gpus, output_folder, batch_size, num_gpus),
-                      shell=True)
-      subprocess.call("%s --batch_size=%d --num_gpus=%d >> %s/batch_size=%d/gpus=%d.out 2>/dev/null" %
-                      (command, batch_size, num_gpus, output_folder, batch_size, num_gpus),
-                      shell=True)
+      with open("%s/batch_size=%d/gpus=%d.out" % (output_folder, batch_size, num_gpus), 'w') as f:
+        f.write("%s --batch_size=%d --num_gpus=%d\n\n" % (command, batch_size, num_gpus))
+        output = subprocess.check_output("%s --batch_size=%d --num_gpus=%d 2>/dev/null" %
+                                         (command, batch_size, num_gpus), shell=True)
+        lines = output.split('\n')
+        for line in lines:
+          if "total images/sec:" in line:
+            throughput = float(line.split(": ")[1].strip())
+            throughputs[(batch_size, num_gpus)] = throughput
+        f.write(output)
+  print "\t".join([""] + ["# GPUs = %d" % num_gpus for num_gpus in all_num_gpus])
+  for batch_size in all_batch_sizes:
+    values = ["Batch size = %d" % batch_size]
+    for num_gpus in all_num_gpus:
+      values.append(str(throughputs[(batch_size, num_gpus)]))
+    print "\t".join(values)
 
 
 if __name__ == '__main__':
