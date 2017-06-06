@@ -23,6 +23,7 @@ from __future__ import print_function
 import argparse
 from collections import defaultdict
 import os
+import sys
 import threading
 import time
 
@@ -673,6 +674,7 @@ def benchmark_one_step(sess, fetches, step, batch_size,
     log_fn('%i\t%s\t%.3f' % (
         step + 1, get_perf_timing_str(batch_size, step_train_times),
         lossval))
+    sys.stdout.flush()
   if trace_filename is not None and step == -1:
     log_fn('Dumping trace to', trace_filename)
     trace = timeline.Timeline(step_stats=run_metadata.step_stats)
