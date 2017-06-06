@@ -1,0 +1,1 @@
+nohup python3 eval_checkpoints.py -c "python tf_cnn_benchmarks.py --model=resnet50 --eval --data_dir=/lfs/1/deepak/data/imagenet/ --eval_subset=validation --num_batches=100 --batch_size=500" -i /lfs/1/deepak/checkpoints/resnet50_new/ > logs/resnet50_eval.tsv &
