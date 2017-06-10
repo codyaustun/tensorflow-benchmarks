@@ -2,13 +2,18 @@ import argparse
 import subprocess
 import threading
 
-def spawn_process(command, server, docker_image, return_output):
+lock = threading.Lock()
+
+def spawn_process(command, server, docker_image, filename, return_output):
   # TODO: Don't start a new docker container here; have a setup phase where docker containers
   # are started; then have a teardown phase where docker containers are killed.
   docker_cmd = """docker run -v /mnt:/mnt --net=host %s /bin/bash -c 'cd ~/tensorflow_benchmarks/scripts/tf_cnn_benchmarks; %s 2>/dev/null'""" % (docker_image, command)
   ssh_cmd = "ssh -n %s -o StrictHostKeyChecking=no \"%s\"" % (server, docker_cmd))
   if return_output:
     output = subprocess.check_output(ssh_cmd, shell=True)
+    with lock:
+        with open(filename, 'w') as f:
+            f.write(output + "\n")
   else:
     subprocess.call(ssh_cmd, shell=True)
 
@@ -22,7 +27,8 @@ def main(command, servers, num_gpus_per_node, all_num_nodes, all_batch_sizes, ou
     subprocess.call("mkdir -p %s/batch_size=%d" % (output_folder, batch_size),
                     shell=True)
     for num_nodes in all_num_nodes:
-      with open("%s/batch_size=%d/gpus=%d.out" % (output_folder, batch_size, num_nodes), 'w') as f:
+      filename = "%s/batch_size=%d/gpus=%d.out" % (output_folder, batch_size, num_nodes)
+      with open(filename, 'w') as f:
         command_to_execute = command
         worker_hosts = ",".join(["%s:50000" % servers[i] for i in xrange(num_nodes)])
         ps_hosts = ",".join(["%s:50001" % servers[i] for i in xrange(num_nodes)])
@@ -33,28 +39,28 @@ def main(command, servers, num_gpus_per_node, all_num_nodes, all_batch_sizes, ou
           command_to_execute, i) for i in xrange(num_nodes)]
         f.write("%s\n\n" % ("\n".join(worker_commands))
 
-        for i in xrange(num_nodes):
-          helper_thread = threading.Thread(
-            spawn_process, ps_commands[i], servers[i], docker_image, False)
-          helper_thread.start()
+      for i in xrange(num_nodes):
+        helper_thread = threading.Thread(
+          spawn_process, ps_commands[i], servers[i], docker_image, filename, False)
+        helper_thread.start()
 
-        helper_threads = []
-        for i in xrange(num_nodes):
-          helper_thread = threading.Thread(
-            spawn_process, worker_commands[i], servers[i], docker_image, True)
-          helper_threads.append(helper_thread)
-          helper_thread.start()
+      helper_threads = []
+      for i in xrange(num_nodes):
+        helper_thread = threading.Thread(
+          spawn_process, worker_commands[i], servers[i], docker_image, filename, True)
+        helper_threads.append(helper_thread)
+        helper_thread.start()
 
-        for i in xrange(num_nodes):
-          helper_threads[i].join()
+      for i in xrange(num_nodes):
+        helper_threads[i].join()
 
-        # TODO: Somehow get the output here.
-        lines = output.split('\n')
+      with open(filename, 'r') as f:
+        lines = f.read().split('\n')
         for line in lines:
           if "total images/sec:" in line:
             throughput = float(line.split(": ")[1].strip())
             throughputs[(batch_size, num_gpus)] = throughput
-        f.write(output)
+
   print "\t".join([""] + ["# GPUs = %d" % num_gpus for num_gpus in all_num_gpus])
   for batch_size in all_batch_sizes:
     values = ["Batch size = %d" % batch_size]
