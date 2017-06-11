@@ -5,7 +5,9 @@ import time
 
 def main(input_path, output_path, time_interval):
   cnt = 0
-  subprocess.call("mkdir -p %s" % output_path, shell=True)
+  subprocess.call("rm -rf %s; mkdir -p %s" % (output_path, output_path), shell=True)
+  subprocess.call("echo \"Time interval = %d secs\" > %s" % (time_interval,
+                  os.path.join(output_path, "README.md")))
   while True:
     time.sleep(time_interval)
     ckpt_path = ("%5d" % cnt).replace(' ', '0')
