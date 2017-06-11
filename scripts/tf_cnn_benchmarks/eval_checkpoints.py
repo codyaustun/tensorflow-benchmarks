@@ -33,8 +33,10 @@ if __name__ == '__main__':
   )
   parser.add_argument('-i', "--input_path", type=str, required=True,
                       help="Path to dumped model checkpoints")
+  parser.add_argument('-c', "--command", type=str, required=True,
+                      help="Command to evaluate each individual checkpoint")
 
   cmdline_args = parser.parse_args()
   opt_dict = vars(cmdline_args)
 
-  main(opt_dict["input_path"])
+  main(opt_dict["input_path"], opt_dict["command"])
