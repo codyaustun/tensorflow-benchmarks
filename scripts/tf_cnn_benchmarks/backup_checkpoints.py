@@ -13,7 +13,9 @@ def main(input_path, output_path, time_interval):
     ckpt_path = ("%5d" % cnt).replace(' ', '0')
     full_output_path = os.path.join(output_path, ckpt_path)
     print "Backing up checkpoint to %s..." % full_output_path
-    subprocess.call("cp -r %s %s" % (input_path, full_output_path), shell=True)
+    subprocess.call("cp %s/checkpoint %s/" % (input_path, full_output_path), shell=True)
+    subprocess.call("cp %s/graph.pbtxt %s/" % (input_path, full_output_path), shell=True)
+    subprocess.call("mv %s/model* %s/" % (input_path, full_output_path), shell=True)
     cnt += 1
 
 
