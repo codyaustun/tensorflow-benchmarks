@@ -35,7 +35,7 @@ def main(command, servers, num_gpus_per_node, all_num_nodes, all_batch_sizes,
           command_to_execute += " --train_dir=%s" % input_path
         worker_hosts = ",".join(["%s:50000" % servers[i] for i in xrange(num_nodes)])
         ps_hosts = ",".join(["%s:50001" % servers[i] for i in xrange(num_nodes)])
-        command_to_execute = command + " --worker_hosts=%s --ps_hosts=%s --num_gpus=%d --batch_size=%d" % (
+        command_to_execute += " --worker_hosts=%s --ps_hosts=%s --num_gpus=%d --batch_size=%d" % (
           worker_hosts, ps_hosts, num_gpus_per_node, batch_size)
         worker_commands = ["%s --job_name=worker --task_index=%d" % (command_to_execute, i) for i in xrange(num_nodes)]
         ps_commands = ["CUDA_VISIBLE_DEVICES='' %s --job_name=ps --task_index=%d" % (
@@ -136,5 +136,5 @@ if __name__ == '__main__':
 
   main(opt_dict["command"], opt_dict["servers"], opt_dict["num_gpus_per_node"],
        opt_dict["num_nodes"], opt_dict["batch_size"], opt_dict["output_folder"],
-       opt_dict["docker_image"], opt_dict["input_path"], opt_dict["output-path"],
+       opt_dict["docker_image"], opt_dict["input_path"], opt_dict["output_path"],
        opt_dict["time_interval"])
