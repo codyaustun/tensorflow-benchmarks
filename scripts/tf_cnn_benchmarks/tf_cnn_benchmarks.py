@@ -187,7 +187,7 @@ tf.flags.DEFINE_integer('summary_verbosity', 0,
 tf.flags.DEFINE_integer('save_summaries_steps', 0,
                         """How often to save summaries for trained models.
                         Pass 0 to disable summaries.""")
-tf.flags.DEFINE_integer('save_model_secs', 0,
+tf.flags.DEFINE_integer('save_model_steps', 0,
                         """How often to save trained models. Pass 0 to disable
                         checkpoints""")
 tf.flags.DEFINE_string('train_dir', None,
@@ -967,7 +967,7 @@ class BenchmarkCNN(object):
         saver=tf.train.Saver(tf.global_variables()),
         global_step=global_step,
         summary_op=None,
-        save_model_secs=FLAGS.save_model_secs,
+        save_model_secs=FLAGS.save_model_steps,
         summary_writer=summary_writer)
 
     step_train_times = []
@@ -1028,6 +1028,12 @@ class BenchmarkCNN(object):
             self.trace_filename, fetch_summary)
         if summary_str is not None and is_chief:
           sv.summary_computed(sess, summary_str)
+        if (FLAGS.train_dir is not None and is_chief and
+            (local_step + 1) % FLAGS.save_model_steps == 0):
+          checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
+          if not gfile.Exists(FLAGS.train_dir):
+            gfile.MakeDirs(FLAGS.train_dir)
+          sv.saver.save(sess, checkpoint_path, global_step)
         local_step += 1
       # Waits for the global step to be done, regardless of done_fn.
       while not global_step_watcher.done():
