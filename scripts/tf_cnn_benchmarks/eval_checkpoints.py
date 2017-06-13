@@ -1,6 +1,7 @@
 import argparse
 import os
 import subprocess
+import sys
 import time
 
 def main(input_path, temp_path, command):
@@ -30,6 +31,7 @@ def main(input_path, temp_path, command):
         global_step = int(tokens[2].split()[3])
         stats = [(cnt + 1) * time_interval, global_step, precision_at_1, recall_at_5]
         print "\t".join([str(stat) for stat in stats])
+        sys.stdout.flush()
     cnt += 1
 
 
