@@ -699,8 +699,8 @@ class BenchmarkCNN(object):
       summary.value.add(tag='eval/Accuracy@1', simple_value=precision_at_1)
       summary.value.add(tag='eval/Recall@5', simple_value=recall_at_5)
       summary_writer.add_summary(summary, global_step)
-      log_fn('Precision @ 1 = %.4f recall @ 5 = %.4f [%d examples]' %
-             (precision_at_1, recall_at_5, total_eval_count))
+      log_fn('Precision @ 1 = %.4f, Recall @ 5 = %.4f, Global step = %d [%d examples]' %
+             (precision_at_1, recall_at_5, global_step, total_eval_count))
 
   def _benchmark_cnn(self):
     """Run cnn in benchmark mode. When forward_only on, it forwards CNN."""
