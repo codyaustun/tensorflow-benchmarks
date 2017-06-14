@@ -8,6 +8,8 @@ def main(input_path, output_path, time_interval):
   subprocess.call("rm -rf %s; mkdir -p %s" % (output_path, output_path), shell=True)
   subprocess.call("echo \"Time interval = %d secs\" > %s" % (time_interval,
                   os.path.join(output_path, "README.md")), shell=True)
+  subprocess.call("echo \"Original checkpoint path = %s\" >> %s" % (input_path,
+                  os.path.join(output_path, "README.md")), shell=True)
   while True:
     time.sleep(time_interval)
     ckpt_path = ("%5d" % cnt).replace(' ', '0')
