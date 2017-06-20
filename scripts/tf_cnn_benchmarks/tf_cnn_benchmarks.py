@@ -115,7 +115,7 @@ tf.flags.DEFINE_string('graph_file', None,
                        file. Defaults to binary format unless filename ends
                        in 'txt'.""")
 tf.flags.DEFINE_string('optimizer', 'sgd',
-                       'Optimizer to use: momentum or sgd or rmsprop')
+                       'Optimizer to use: momentum or sgd or rmsprop or adam')
 tf.flags.DEFINE_float('learning_rate', None,
                       """Initial learning rate for training.""")
 tf.flags.DEFINE_float('num_epochs_per_decay', 0,
@@ -126,6 +126,9 @@ tf.flags.DEFINE_float('momentum', 0.9, """Momentum for training.""")
 tf.flags.DEFINE_float('rmsprop_decay', 0.9, """Decay term for RMSProp.""")
 tf.flags.DEFINE_float('rmsprop_momentum', 0.9, """Momentum in RMSProp.""")
 tf.flags.DEFINE_float('rmsprop_epsilon', 1.0, """Epsilon term for RMSProp.""")
+tf.flags.DEFINE_float('adam_beta1', 0.9, """Beta1 term for Adam.""")
+tf.flags.DEFINE_float('adam_beta2', 0.999, """Beta2 term for Adam.""")
+tf.flags.DEFINE_float('adam_epsilon', 1e-8, """Epsilon term for Adam.""")
 tf.flags.DEFINE_float('gradient_clip', None, """Gradient clipping magnitude.
                        Disabled by default.""")
 tf.flags.DEFINE_float('weight_decay', 0.00004,
@@ -1182,6 +1185,11 @@ class BenchmarkCNN(object):
           opt = tf.train.RMSPropOptimizer(learning_rate, FLAGS.rmsprop_decay,
                                           momentum=FLAGS.rmsprop_momentum,
                                           epsilon=FLAGS.rmsprop_epsilon)
+        elif FLAGS.optimizer == 'adam':
+          opt = tf.train.AdamOptimizer(learning_rate=learning_rate,
+                                       beta1=FLAGS.adam_beta1,
+                                       beta2=FLAGS.adam_beta2,
+                                       epsilon=FLAGS.adam_epsilon)
         else:
           raise ValueError('Optimizer "%s" was not recognized', FLAGS.optimizer)
 
