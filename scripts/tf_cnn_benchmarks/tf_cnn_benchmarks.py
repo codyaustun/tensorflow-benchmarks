@@ -75,7 +75,7 @@ tf.flags.DEFINE_string('data_dir', None, """Path to dataset in TFRecord format
                        (aka Example protobufs). If not specified,
                        synthetic data will be used.""")
 tf.flags.DEFINE_string('data_name', None,
-                       """Name of dataset: imagenet or flowers.
+                       """Name of dataset: cifar10, imagenet or flowers.
                        If not specified, it is automatically guessed
                        based on --data_dir.""")
 tf.flags.DEFINE_string('resize_method', 'bilinear',
@@ -764,6 +764,8 @@ class BenchmarkCNN(object):
           self.data_name = 'imagenet'
         elif 'flowers' in FLAGS.data_dir:
           self.data_name = 'flowers'
+        elif 'cifar10' in FLAGS.data_dir:
+          self.data_name = 'cifar10'
         else:
           raise ValueError('Could not identify name of dataset. '
                            'Please specify with --data_name option.')
@@ -771,6 +773,8 @@ class BenchmarkCNN(object):
         self.dataset = datasets.ImagenetData(FLAGS.data_dir)
       elif self.data_name == 'flowers':
         self.dataset = datasets.FlowersData(FLAGS.data_dir)
+      elif self.data_name == 'cifar10':
+        self.dataset = datasets.CIFAR10Data(FLAGS.data_dir)
       else:
         raise ValueError('Unknown dataset. Must be one of imagenet or flowers.')
 
