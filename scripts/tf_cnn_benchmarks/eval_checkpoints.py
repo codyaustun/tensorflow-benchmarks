@@ -4,8 +4,8 @@ import subprocess
 import sys
 import time
 
-def main(input_path, command):
-  cnt = 0
+def main(input_path, command, start_cnt):
+  cnt = start_cnt
   with open(os.path.join(input_path, "README.md"), 'r') as f:
     output = f.read()
     output_lines = output.split('\n')
@@ -45,8 +45,10 @@ if __name__ == '__main__':
                       help="Path to dumped model checkpoints")
   parser.add_argument('-c', "--command", type=str, required=True,
                       help="Command to evaluate each individual checkpoint")
+  parser.add_argument('-s', "--start_cnt", type=int, default=0,
+                      help="Count to start evaluating checkpoints from")
 
   cmdline_args = parser.parse_args()
   opt_dict = vars(cmdline_args)
 
-  main(opt_dict["input_path"], opt_dict["command"])
+  main(opt_dict["input_path"], opt_dict["command"], opt_dict["start_cnt"])
