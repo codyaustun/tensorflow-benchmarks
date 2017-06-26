@@ -1066,7 +1066,10 @@ class BenchmarkCNN(object):
 
   def _build_model(self):
     """Build the TensorFlow graph."""
-    image_size = self.model_conf.get_image_size()
+    if self.data_name == 'cifar10':
+      image_size = 32
+    else:
+      image_size = self.model_conf.get_image_size()
     data_type = tf.float32
     input_data_type = tf.float32
     input_nchan = 3
