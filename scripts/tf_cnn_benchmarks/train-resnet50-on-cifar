@@ -1,0 +1,2 @@
+nohup python tf_cnn_benchmarks.py --model=resnet50 --batch_size=64 --data_dir=/root/cifar10/ --optimizer=adam --num_batches=100000 --local_parameter_device=cpu --use_nccl=True --train_dir=/root/resnet50_checkpoint --save_model_steps=400 > resnet_results.out &
+nohup python backup_checkpoints.py -i /root/resnet50_checkpoint -o /root/resnet50_checkpoints -t 600 > resnet_checkpoint_results.out &
