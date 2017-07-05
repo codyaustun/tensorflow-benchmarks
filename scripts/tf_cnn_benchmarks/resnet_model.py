@@ -54,8 +54,7 @@ class Resnetv1Model(model_lib.Model):
       raise ValueError('Layer counts not specified for %s' % self.get_model())
     cnn.use_batch_norm = True
     cnn.batch_norm_config = {'decay': 0.997, 'epsilon': 1e-5, 'scale': True}
-    cnn.conv(64, 7, 7, 2, 2, mode='SAME_RESNET')
-    cnn.mpool(3, 3, 2, 2)
+    cnn.conv(64, 3, 3, 1, 1, mode='SAME_RESNET')
     for _ in xrange(self.layer_counts[0]):
       cnn.resnet_bottleneck_v1(256, 64, 1)
     for i in xrange(self.layer_counts[1]):
