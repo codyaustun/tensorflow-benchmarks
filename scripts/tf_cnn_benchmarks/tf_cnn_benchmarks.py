@@ -1162,8 +1162,9 @@ class BenchmarkCNN(object):
         gradient_clip = FLAGS.gradient_clip
         learning_rate = self.model_conf.get_learning_rate()
         if self.dataset and FLAGS.num_epochs_per_decay > 0:
+          subset = "validation" if FLAGS.eval else "train"
           num_batches_per_epoch = (
-              self.dataset.num_examples_per_epoch() / self.batch_size)
+              self.dataset.num_examples_per_epoch(subset) / self.batch_size)
           decay_steps = int(num_batches_per_epoch * FLAGS.num_epochs_per_decay)
 
           # Decay the learning rate exponentially based on the number of steps.
