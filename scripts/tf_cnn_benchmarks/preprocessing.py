@@ -120,6 +120,15 @@ def decode_jpeg(image_buffer, scope=None):  # , dtype=tf.float32):
     return image
 
 
+def eval_image_simplified(image, height, width, thread_id):
+  """Get the image for model evaluation."""
+  with tf.name_scope('eval_image'):
+    image = tf.image.convert_image_dtype(image, dtype=tf.float32)
+    image.set_shape([height, width, 3])
+    eval_image = tf.image.per_image_standardization(image)
+    return eval_image
+
+
 def eval_image(image, height, width, bbox, thread_id, resize):
   """Get the image for model evaluation."""
   with tf.name_scope('eval_image'):
@@ -172,6 +181,51 @@ def eval_image(image, height, width, bbox, thread_id, resize):
           'cropped_resized_image', tf.expand_dims(distorted_image, 0))
     image = distorted_image
   return image
+
+
+def distort_image_simplified(image, height, width, thread_id=0, scope=None):
+  """Distort one image for training a network.
+
+  Distorting images provides a useful technique for augmenting the data
+  set during training in order to make the network invariant to aspects
+  of the image that do not effect the label.
+
+  Args:
+    image: 3-D float Tensor of image
+    height: integer
+    width: integer
+    thread_id: integer indicating the preprocessing thread.
+    scope: Optional scope for op_scope.
+  Returns:
+    3-D float Tensor of distorted image used for training.
+  """
+  with tf.name_scope(scope or 'distort_image'):
+    # After this point, all image pixels reside in [0,1)
+    # until the very end, when they're rescaled to (-1, 1).  The various
+    # adjust_* ops all require this range for dtype float.
+    image = tf.image.convert_image_dtype(image, dtype=tf.float32)
+
+    # Now crop image to target height and width.
+    distorted_image = tf.image.resize_image_with_crop_or_pad(image, height, width)
+    # Restore the shape since the dynamic slice based upon the bbox_size loses
+    # the third dimension.
+    distorted_image.set_shape([height, width, 3])
+    if not thread_id:
+      tf.summary.image(
+          'cropped_resized_image',
+          tf.expand_dims(distorted_image, 0))
+
+    # Randomly flip the image horizontally.
+    distorted_image = tf.image.random_flip_left_right(distorted_image)
+
+    # Normalize the image.
+    distorted_image = tf.image.per_image_standardization(distorted_image)
+
+    if not thread_id:
+      tf.summary.image(
+          'final_distorted_image',
+          tf.expand_dims(distorted_image, 0))
+    return distorted_image
 
 
 def distort_image(image, height, width, bbox, thread_id=0, scope=None):
@@ -343,13 +397,9 @@ class ImagePreprocessor(object):
     image = tf.image.decode_jpeg(image_buffer, channels=3,
                                  dct_method='INTEGER_FAST')
     if self.train and self.distortions:
-      image = distort_image(image, self.height, self.width, bbox, thread_id)
+      image = distort_image_simplified(image, self.height, self.width, thread_id)
     else:
-      image = eval_image(image, self.height, self.width, bbox, thread_id,
-                         self.resize_method)
-    # Note: image is now float32 [height,width,3] with range [0, 255]
-
-    # image = tf.cast(image, tf.uint8) # HACK TESTING
+      image = eval_image_simplified(image, self.height, self.width, thread_id)
 
     return image
 

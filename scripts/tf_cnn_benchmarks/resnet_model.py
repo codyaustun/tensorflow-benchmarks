@@ -46,7 +46,7 @@ class Resnetv1Model(model_lib.Model):
         'resnet152': 32,
     }
     batch_size = defaults.get(model, 32)
-    super(Resnetv1Model, self).__init__(model, 224, batch_size, 0.005,
+    super(Resnetv1Model, self).__init__(model, 32, batch_size, 0.005,
                                         layer_counts)
 
   def add_inference(self, cnn):

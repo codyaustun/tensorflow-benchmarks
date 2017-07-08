@@ -781,6 +781,9 @@ class BenchmarkCNN(object):
       else:
         raise ValueError('Unknown dataset. Must be one of imagenet or flowers.')
 
+    if FLAGS.eval:
+      self.num_batches = self.dataset.num_examples_per_epoch("validation") / self.batch_size
+
     self.local_parameter_device_flag = FLAGS.local_parameter_device
     if self.job_name:
       self.task_index = FLAGS.task_index
