@@ -1,0 +1,1 @@
+python eval_checkpoints.py -i /data/resnet50_checkpoints/ -c "python tf_cnn_benchmarks.py --eval --model=resnet50 --data_dir=/root/cifar10"

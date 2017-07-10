@@ -314,7 +314,7 @@ def distort_image(image, height, width, bbox, thread_id=0, scope=None):
     distorted_image = tf.image.random_flip_left_right(distorted_image)
 
     # Randomly distort the colors.
-    distorted_image = distort_color(distorted_image, thread_id)
+    # distorted_image = distort_color(distorted_image, thread_id)
 
     # Note: This ensures the scaling matches the output of eval_image
     distorted_image *= 256
@@ -397,9 +397,10 @@ class ImagePreprocessor(object):
     image = tf.image.decode_jpeg(image_buffer, channels=3,
                                  dct_method='INTEGER_FAST')
     if self.train and self.distortions:
-      image = distort_image_simplified(image, self.height, self.width, thread_id)
+      image = distort_image(image, self.height, self.width, bbox, thread_id)
     else:
-      image = eval_image_simplified(image, self.height, self.width, thread_id)
+      image = eval_image(image, self.height, self.width, bbox, thread_id,
+                         self.resize_method)
 
     return image
 
