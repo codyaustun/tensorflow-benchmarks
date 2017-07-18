@@ -3,13 +3,14 @@ import os
 import subprocess
 import time
 
-def main(input_path, output_path, time_interval):
-  cnt = 0
-  subprocess.call("rm -rf %s; mkdir -p %s" % (output_path, output_path), shell=True)
-  subprocess.call("echo \"Time interval = %d secs\" > %s" % (time_interval,
-                  os.path.join(output_path, "README.md")), shell=True)
-  subprocess.call("echo \"Original checkpoint path = %s\" >> %s" % (input_path,
-                  os.path.join(output_path, "README.md")), shell=True)
+def main(input_path, output_path, time_interval, start_cnt):
+  cnt = start_cnt
+  if cnt == 0:
+    subprocess.call("rm -rf %s; mkdir -p %s" % (output_path, output_path), shell=True)
+    subprocess.call("echo \"Time interval = %d secs\" > %s" % (time_interval,
+                    os.path.join(output_path, "README.md")), shell=True)
+    subprocess.call("echo \"Original checkpoint path = %s\" >> %s" % (input_path,
+                    os.path.join(output_path, "README.md")), shell=True)
   while True:
     time.sleep(time_interval)
     ckpt_path = ("%5d" % cnt).replace(' ', '0')
@@ -32,8 +33,10 @@ if __name__ == '__main__':
                       help="Path to dump model checkpoints")
   parser.add_argument('-t', "--time_interval", type=int, required=True,
                       help="Time interval (in seconds) between model checkpoint dumps")
+  parser.add_argument('-s', "--start_cnt", type=int, default=0,
+                      help="Start count")
 
   cmdline_args = parser.parse_args()
   opt_dict = vars(cmdline_args)
 
-  main(opt_dict["input_path"], opt_dict["output_path"], opt_dict["time_interval"])
+  main(opt_dict["input_path"], opt_dict["output_path"], opt_dict["time_interval"], opt_dict["start_cnt"])
