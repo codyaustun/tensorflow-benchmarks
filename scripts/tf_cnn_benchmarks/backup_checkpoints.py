@@ -11,6 +11,8 @@ def main(input_path, output_path, time_interval, start_cnt):
                     os.path.join(output_path, "README.md")), shell=True)
     subprocess.call("echo \"Original checkpoint path = %s\" >> %s" % (input_path,
                     os.path.join(output_path, "README.md")), shell=True)
+
+  time.sleep(100)  # To make sure two timers aren't in sync
   while True:
     time.sleep(time_interval)
     ckpt_path = ("%5d" % cnt).replace(' ', '0')
