@@ -11,7 +11,7 @@ def main(input_path, command, start_cnt):
     output_lines = output.split('\n')
     time_interval = int(output_lines[0].split(" = ")[1].strip().rstrip(" secs"))
     original_path = output_lines[1].split(" = ")[1].strip()
-  print "Time (in secs)\tNumber of minibatches\tTop 1 accuracy\tTop 5 accuracy"
+  print("Time (in secs)\tNumber of minibatches\tTop 1 accuracy\tTop 5 accuracy")
   while True:
     ckpt_path = ("%5d" % cnt).replace(' ', '0')
     full_ckpt_path = os.path.join(input_path, ckpt_path)
@@ -20,11 +20,12 @@ def main(input_path, command, start_cnt):
     if len(os.listdir(full_ckpt_path)) <= 2:
       cnt += 1
       continue
-    subprocess.check_output("mkdir -p %s; rm %s/*; cp %s/* %s" %
+    subprocess.check_output("mkdir -p %s; rm -rf %s/*; cp %s/* %s" %
                             (original_path, original_path, full_ckpt_path, original_path),
                             shell=True)
-    full_command = command + " --train_dir=%s 2>/dev/null" % original_path
+    full_command = command + " --log_root=%s 2>/dev/null" % original_path
     output = subprocess.check_output(full_command, shell=True)
+    output = output.decode('utf8').strip()
     for line in output.split('\n'):
       if "Precision" in line and "Recall" in line:
         tokens = line.split(", ")  # TODO: Nasty hack, make more robust.
@@ -32,7 +33,7 @@ def main(input_path, command, start_cnt):
         recall_at_5 = float(tokens[1].split()[-1])
         global_step = int(tokens[2].split()[3])
         stats = [(cnt + 1) * time_interval, global_step, precision_at_1, recall_at_5]
-        print "\t".join([str(stat) for stat in stats])
+        print("\t".join([str(stat) for stat in stats]))
         sys.stdout.flush()
     cnt += 1
 
