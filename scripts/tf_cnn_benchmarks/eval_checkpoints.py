@@ -7,6 +7,7 @@ def main(checkpoints_path, command, start_cnt):
   cnt = start_cnt
 
   times = {}
+  cum_time = 0.0
   with open(os.path.join(checkpoints_path, "times.log"), 'r') as f:
     output = f.read().strip()
     output_lines = output.split('\n')
@@ -15,7 +16,8 @@ def main(checkpoints_path, command, start_cnt):
         [step, time] = output_line.split('\t')
         step = int(step.split(': ')[1])
         time = float(time.split(': ')[1])
-        times[step] = time
+        cum_time += time
+        times[step] = cum_time
 
   print("Time (in secs)\tNumber of minibatches\tTop 1 accuracy\tTop 5 accuracy")
   while True:
