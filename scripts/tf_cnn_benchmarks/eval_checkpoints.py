@@ -12,7 +12,6 @@ def main(checkpoints_path, command, start_cnt):
     output = f.read().strip()
     output_lines = output.split('\n')
     for output_line in output_lines:
-        print(output_line)
         [step, time] = output_line.split('\t')
         step = int(step.split(': ')[1])
         time = float(time.split(': ')[1])
