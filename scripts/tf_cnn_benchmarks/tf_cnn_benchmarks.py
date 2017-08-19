@@ -23,6 +23,7 @@ from __future__ import print_function
 import argparse
 import math
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -72,6 +73,7 @@ tf.flags.DEFINE_integer('batch_group_size', 1,
                         'producer.')
 tf.flags.DEFINE_integer('num_batches', 100,
                         'number of batches to run, excluding warmup')
+tf.flags.DEFINE_string('subset', None, 'Subset of data to operate on')
 tf.flags.DEFINE_integer('num_warmup_batches', None,
                         'number of batches to run before timing')
 tf.flags.DEFINE_integer('autotune_threshold', None,
@@ -256,12 +258,11 @@ tf.flags.DEFINE_integer('summary_verbosity', 0,
 tf.flags.DEFINE_integer('save_summaries_steps', 0,
                         """How often to save summaries for trained models.
                         Pass 0 to disable summaries.""")
-tf.flags.DEFINE_integer('save_model_steps', 0,
-                        """How often to save trained models. Pass 0 to disable
-                        checkpoints""")
 tf.flags.DEFINE_string('train_dir', None,
                        """Path to session checkpoints. Pass None to disable
                        saving checkpoint at the end.""")
+tf.flags.DEFINE_string('checkpoint_dir', None,
+                       """Path to checkpoints.""")
 tf.flags.DEFINE_string('eval_dir', '/tmp/tf_cnn_benchmarks/eval',
                        """Directory where to write eval event logs.""")
 tf.flags.DEFINE_string('result_storage', None,
@@ -775,7 +776,7 @@ class BenchmarkCNN(object):
         saver=saver,
         global_step=global_step,
         summary_op=None,
-        save_model_secs=FLAGS.save_model_steps,
+        save_model_secs=None,
         summary_writer=summary_writer)
 
     step_train_times = []
@@ -809,6 +810,11 @@ class BenchmarkCNN(object):
 
       log_fn('Running warm up')
       local_step = -1 * self.num_warmup_batches
+      start_time = time.time()
+      if FLAGS.checkpoint_dir is not None:
+        subprocess.call("rm -rf %s; mkdir -p %s" % (FLAGS.checkpoint_dir,
+                                                    FLAGS.checkpoint_dir), shell=True)
+        f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'w')
 
       if FLAGS.cross_replica_sync and FLAGS.job_name:
         # In cross-replica sync mode, all workers must run the same number of
@@ -816,7 +822,12 @@ class BenchmarkCNN(object):
         done_fn = lambda: local_step == self.num_batches
       else:
         done_fn = global_step_watcher.done
+      subset = 'train'
+      if FLAGS.subset is not None:
+        subset = FLAGS.subset
       while not done_fn():
+        num_minibatches_per_epoch = int(self.dataset.num_examples_per_epoch(subset) / self.batch_size)
+        epoch = local_step / num_minibatches_per_epoch
         if local_step == 0:
           log_fn('Done warm up')
           if execution_barrier:
@@ -840,13 +851,20 @@ class BenchmarkCNN(object):
             self.trace_filename, image_producer, fetch_summary)
         if summary_str is not None and is_chief:
           sv.summary_computed(sess, summary_str)
-        if (FLAGS.train_dir is not None and is_chief and
-            (local_step + 1) % FLAGS.save_model_steps == 0):
-          checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
-          if not gfile.Exists(FLAGS.train_dir):
-            gfile.MakeDirs(FLAGS.train_dir)
-          sv.saver.save(sess, checkpoint_path, global_step)
+
+        if (FLAGS.checkpoint_dir is not None and is_chief and
+            (((local_step + 1) % num_minibatches_per_epoch) == 0)):
+          end_time = time.time()
+          directory = os.path.join(FLAGS.checkpoint_dir, ("%5d" % epoch).replace(' ', '0'))
+          subprocess.call("mkdir -p %s" % directory, shell=True)
+          checkpoint_path = os.path.join(directory, 'model.ckpt')
+          f.write("Step: %d\tTime: %s\n" % (local_step + 1, end_time - start_time))
+          sv.saver.save(sess, checkpoint_path, global_step=global_step)
+          log_fn("Saved checkpoint after %d epoch(s) to %s..." % (epoch, directory))
+          sys.stdout.flush()
+          start_time = time.time()
         local_step += 1
+
       # Waits for the global step to be done, regardless of done_fn.
       while not global_step_watcher.done():
         time.sleep(.25)
@@ -857,17 +875,24 @@ class BenchmarkCNN(object):
       image_producer.done()
       if is_chief:
         store_benchmarks({'total_images_per_sec': images_per_sec})
+
       # Save the model checkpoint.
-      if FLAGS.train_dir is not None and is_chief:
-        checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
-        if not gfile.Exists(FLAGS.train_dir):
-          gfile.MakeDirs(FLAGS.train_dir)
-        sv.saver.save(sess, checkpoint_path, global_step)
+      if FLAGS.checkpoint_dir is not None and is_chief:
+        end_time = time.time()
+        directory = os.path.join(FLAGS.checkpoint_dir, ("%5d" % epoch).replace(' ', '0'))
+        subprocess.call("mkdir -p %s" % directory, shell=True)
+        checkpoint_path = os.path.join(directory, 'model.ckpt')
+        f.write("Step: %d\tTime: %s\n" % (local_step, end_time - start_time))
+        sv.saver.save(sess, checkpoint_path, global_step=global_step)
+        log_fn("Saved checkpoint after %d epoch(s) to %s..." % (epoch, directory))
+        sys.stdout.flush()
+        start_time = time.time()
 
       if execution_barrier:
         # Wait for other workers to reach the end, so this worker doesn't
         # go away underneath them.
         sess.run([execution_barrier])
+    f.close()
     sv.stop()
 
   def _build_model(self):
