@@ -757,7 +757,7 @@ class BenchmarkCNN(object):
     # passing in None for summary_op to avoid a summary_thread being started.
     # Running summaries and training operations in parallel could run out of
     # GPU memory.
-    saver = tf.train.Saver(self.variable_mgr.savable_variables())
+    saver = tf.train.Saver(self.variable_mgr.savable_variables(), max_to_keep=10000)
     ready_for_local_init_op = None
     if self.job_name:
       # In distributed mode, we don't want to run local_var_init_op_group until
