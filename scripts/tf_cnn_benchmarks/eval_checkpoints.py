@@ -27,7 +27,7 @@ def main(checkpoints_path, command, start_cnt):
     if len(os.listdir(full_ckpt_path)) <= 2:
       cnt += 1
       continue
-    full_command = command + " --train_dir=%s 2>/dev/null" % full_ckpt_path
+    full_command = command + " --checkpoint_dir=%s 2>/dev/null" % full_ckpt_path
     output = subprocess.check_output(full_command, shell=True)
     output = output.decode('utf8').strip()
     for line in output.split('\n'):
@@ -35,7 +35,7 @@ def main(checkpoints_path, command, start_cnt):
         tokens = line.split(", ")  # TODO: Nasty hack, make more robust.
         precision_at_1 = float(tokens[0].split()[-1])
         recall_at_5 = float(tokens[1].split()[-1])
-        step = int(tokens[2].split()[3])
+        step = int(tokens[2].split()[3]) - 10
         stats = [times[step], step, precision_at_1, recall_at_5]
         print("\t".join([str(stat) for stat in stats]))
         sys.stdout.flush()

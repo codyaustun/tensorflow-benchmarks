@@ -661,12 +661,12 @@ class BenchmarkCNN(object):
                  fetches, summary_op):
     """Evaluate the model from a checkpoint using validation dataset."""
     with tf.Session(target=target, config=create_config_proto()) as sess:
-      if FLAGS.train_dir is None:
+      if FLAGS.checkpoint_dir is None:
         raise ValueError('Trained model directory not specified')
       try:
-        global_step = load_checkpoint(saver, sess, FLAGS.train_dir)
+        global_step = load_checkpoint(saver, sess, FLAGS.checkpoint_dir)
       except CheckpointNotFoundException:
-        log_fn('Checkpoint not found in %s' % FLAGS.train_dir)
+        log_fn('Checkpoint not found in %s' % FLAGS.checkpoint_dir)
         return
       sess.run(local_var_init_op_group)
       if self.dataset.queue_runner_required():
@@ -677,6 +677,12 @@ class BenchmarkCNN(object):
       for i in xrange(len(enqueue_ops)):
         sess.run(enqueue_ops[:(i+1)])
         image_producer.notify_image_consumption()
+      for i in xrange(len(enqueue_ops)):
+        sess.run(enqueue_ops[:(i+1)])
+      if FLAGS.checkpoint_dir is None:
+        raise ValueError('Trained model directory not specified')
+      global_step = load_checkpoint(saver, sess, FLAGS.checkpoint_dir)
+
       start_time = time.time()
       top_1_accuracy_sum = 0.0
       top_5_accuracy_sum = 0.0
@@ -810,21 +816,35 @@ class BenchmarkCNN(object):
 
       log_fn('Running warm up')
       local_step = -1 * self.num_warmup_batches
+      end_step = self.num_batches
+
+      # if FLAGS.start_local_step > 0:
+      #   local_step = FLAGS.start_local_step
+      #   end_step += local_step
+
       start_time = time.time()
       if FLAGS.checkpoint_dir is not None:
+        # if FLAGS.start_local_step == 0:
         subprocess.call("rm -rf %s; mkdir -p %s" % (FLAGS.checkpoint_dir,
                                                     FLAGS.checkpoint_dir), shell=True)
         f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'w')
+        # else:
+        #   # TODO: Fix this. Maybe make use of pretrain_dir in some way?
+        #   directories = os.listdir(FLAGS.checkpoint_dir)
+        #   print(directories)
+        #   f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'a')
+        #   return
 
       if FLAGS.cross_replica_sync and FLAGS.job_name:
         # In cross-replica sync mode, all workers must run the same number of
         # local steps, or else the workers running the extra step will block.
-        done_fn = lambda: local_step == self.num_batches
+        done_fn = lambda: local_step == end_step
       else:
         done_fn = global_step_watcher.done
       subset = 'train'
       if FLAGS.subset is not None:
         subset = FLAGS.subset
+
       while not done_fn():
         num_minibatches_per_epoch = int(self.dataset.num_examples_per_epoch(subset) / self.batch_size)
         epoch = local_step / num_minibatches_per_epoch
