@@ -868,7 +868,7 @@ class BenchmarkCNN(object):
           sv.summary_computed(sess, summary_str)
 
         if (FLAGS.checkpoint_dir is not None and is_chief and
-            (((local_step + 1) % num_minibatches_per_epoch) == 0)):
+            ((local_step % num_minibatches_per_epoch) == 0)):
           end_time = time.time()
           directory = os.path.join(FLAGS.checkpoint_dir, ("%5d" % epoch).replace(' ', '0'))
           subprocess.call("mkdir -p %s" % directory, shell=True)
