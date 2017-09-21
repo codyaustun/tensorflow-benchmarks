@@ -17,7 +17,7 @@
 """
 
 from abc import abstractmethod
-import cPickle
+import pickle as cPickle
 import os
 
 import numpy as np
@@ -181,4 +181,4 @@ class Cifar10Data(Dataset):
       raise ValueError('Invalid data subset "%s"' % subset)
 
   def get_image_preprocessor(self):
-    return preprocessing.Cifar10ImagePreprocessor
+    return preprocessing.RecordInputImagePreprocessor

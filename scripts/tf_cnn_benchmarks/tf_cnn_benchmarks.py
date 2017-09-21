@@ -677,11 +677,6 @@ class BenchmarkCNN(object):
       for i in xrange(len(enqueue_ops)):
         sess.run(enqueue_ops[:(i+1)])
         image_producer.notify_image_consumption()
-      for i in xrange(len(enqueue_ops)):
-        sess.run(enqueue_ops[:(i+1)])
-      if FLAGS.checkpoint_dir is None:
-        raise ValueError('Trained model directory not specified')
-      global_step = load_checkpoint(saver, sess, FLAGS.checkpoint_dir)
 
       start_time = time.time()
       top_1_accuracy_sum = 0.0
