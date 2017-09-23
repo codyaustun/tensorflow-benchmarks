@@ -898,6 +898,8 @@ class BenchmarkCNN(object):
         subprocess.call("mkdir -p %s" % directory, shell=True)
         checkpoint_path = os.path.join(directory, 'model.ckpt')
         f.write("Step: %d\tTime: %s\n" % (local_step, end_time - start_time))
+        f.close()
+        f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'a')
         sv.saver.save(sess, checkpoint_path, global_step=global_step)
         log_fn("Saved checkpoint after %d epoch(s) to %s..." % (epoch, directory))
         sys.stdout.flush()
