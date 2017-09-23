@@ -67,6 +67,8 @@ tf.flags.DEFINE_boolean('forward_only', False, """whether use forward-only or
 tf.flags.DEFINE_boolean('print_training_accuracy', False, """whether to
                         calculate and print training accuracy during
                         training""")
+tf.flags.DEFINE_boolean('resume_training', False, """Resume training from last checkpoint
+                         in passed-in checkpoint directory""")
 tf.flags.DEFINE_integer('batch_size', 0, 'batch size per compute device')
 tf.flags.DEFINE_integer('batch_group_size', 1,
                         'number of groups of batches processed in the image '
@@ -811,24 +813,20 @@ class BenchmarkCNN(object):
 
       log_fn('Running warm up')
       local_step = -1 * self.num_warmup_batches
-      end_step = self.num_batches
-
-      # if FLAGS.start_local_step > 0:
-      #   local_step = FLAGS.start_local_step
-      #   end_step += local_step
-
-      start_time = time.time()
       if FLAGS.checkpoint_dir is not None:
-        # if FLAGS.start_local_step == 0:
-        subprocess.call("rm -rf %s; mkdir -p %s" % (FLAGS.checkpoint_dir,
-                                                    FLAGS.checkpoint_dir), shell=True)
-        f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'w')
-        # else:
-        #   # TODO: Fix this. Maybe make use of pretrain_dir in some way?
-        #   directories = os.listdir(FLAGS.checkpoint_dir)
-        #   print(directories)
-        #   f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'a')
-        #   return
+        if not FLAGS.resume_training:
+          subprocess.call("rm -rf %s; mkdir -p %s" % (FLAGS.checkpoint_dir,
+                                                      FLAGS.checkpoint_dir), shell=True)
+          f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'w')
+        else:
+          f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'a')
+          checkpoints = [int(checkpoint) for checkpoint in os.listdir(FLAGS.checkpoint_dir)
+                         if os.path.isdir(os.path.join(FLAGS.checkpoint_dir, checkpoint))]
+          latest_checkpoint = ("%5d" % max(checkpoints)).replace(' ', '0')
+          global_step = load_checkpoint(os.path.join(FLAGS.checkpoint_dir, latest_checkpoint),
+                                        sess, sv.saver)
+          local_step = global_step  # TODO: Fix this for distributed settings.
+      start_time = time.time()
 
       if FLAGS.cross_replica_sync and FLAGS.job_name:
         # In cross-replica sync mode, all workers must run the same number of
@@ -874,6 +872,8 @@ class BenchmarkCNN(object):
           subprocess.call("mkdir -p %s" % directory, shell=True)
           checkpoint_path = os.path.join(directory, 'model.ckpt')
           f.write("Step: %d\tTime: %s\n" % (local_step + 1, end_time - start_time))
+          f.close()
+          f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'a')
           sv.saver.save(sess, checkpoint_path, global_step=global_step)
           log_fn("Saved checkpoint after %d epoch(s) to %s..." % (epoch, directory))
           sys.stdout.flush()
