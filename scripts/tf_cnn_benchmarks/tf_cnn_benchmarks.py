@@ -813,6 +813,7 @@ class BenchmarkCNN(object):
 
       log_fn('Running warm up')
       local_step = -1 * self.num_warmup_batches
+      global_step_increment = 0
       if FLAGS.checkpoint_dir is not None:
         if not FLAGS.resume_training:
           subprocess.call("rm -rf %s; mkdir -p %s" % (FLAGS.checkpoint_dir,
@@ -823,9 +824,8 @@ class BenchmarkCNN(object):
           checkpoints = [int(checkpoint) for checkpoint in os.listdir(FLAGS.checkpoint_dir)
                          if os.path.isdir(os.path.join(FLAGS.checkpoint_dir, checkpoint))]
           latest_checkpoint = ("%5d" % max(checkpoints)).replace(' ', '0')
-          global_step = load_checkpoint(os.path.join(FLAGS.checkpoint_dir, latest_checkpoint),
-                                        sess, sv.saver)
-          local_step = global_step  # TODO: Fix this for distributed settings.
+          local_step = load_checkpoint(sv.saver, sess, os.path.join(FLAGS.checkpoint_dir, latest_checkpoint))
+          global_step_increment = local_step  # TODO: Fix this for distributed settings.
       start_time = time.time()
 
       if FLAGS.cross_replica_sync and FLAGS.job_name:
@@ -874,7 +874,7 @@ class BenchmarkCNN(object):
           f.write("Step: %d\tTime: %s\n" % (local_step + 1, end_time - start_time))
           f.close()
           f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'a')
-          sv.saver.save(sess, checkpoint_path, global_step=global_step)
+          sv.saver.save(sess, checkpoint_path, global_step=tf.add(global_step, global_step_increment))
           log_fn("Saved checkpoint after %d epoch(s) to %s..." % (epoch, directory))
           sys.stdout.flush()
           start_time = time.time()
@@ -900,7 +900,7 @@ class BenchmarkCNN(object):
         f.write("Step: %d\tTime: %s\n" % (local_step, end_time - start_time))
         f.close()
         f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'a')
-        sv.saver.save(sess, checkpoint_path, global_step=global_step)
+        sv.saver.save(sess, checkpoint_path, global_step=tf.add(global_step, global_step_increment))
         log_fn("Saved checkpoint after %d epoch(s) to %s..." % (epoch, directory))
         sys.stdout.flush()
         start_time = time.time()
