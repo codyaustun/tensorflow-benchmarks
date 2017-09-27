@@ -650,13 +650,9 @@ class BenchmarkCNN(object):
       variable_mgr_init_ops.extend(self.variable_mgr.get_post_init_ops())
     local_var_init_op_group = tf.group(*variable_mgr_init_ops)
     summary_op = tf.summary.merge_all()
-    while True:
-      self._eval_once(
-          saver, summary_writer, target, local_var_init_op_group,
-          image_producer_ops, enqueue_ops, fetches, summary_op)
-      if FLAGS.eval_interval_secs <= 0:
-        break
-      time.sleep(FLAGS.eval_interval_secs)
+    self._eval_once(
+        saver, summary_writer, target, local_var_init_op_group,
+        image_producer_ops, enqueue_ops, fetches, summary_op)
 
   def _eval_once(self, saver, summary_writer, target,
                  local_var_init_op_group, image_producer_ops, enqueue_ops,
@@ -874,7 +870,7 @@ class BenchmarkCNN(object):
           f.write("Step: %d\tTime: %s\n" % (local_step + 1, end_time - start_time))
           f.close()
           f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'a')
-          sv.saver.save(sess, checkpoint_path, global_step=tf.add(global_step, global_step_increment))
+          sv.saver.save(sess, checkpoint_path, global_step=local_step)
           log_fn("Saved checkpoint after %d epoch(s) to %s..." % (epoch, directory))
           sys.stdout.flush()
           start_time = time.time()
@@ -900,7 +896,7 @@ class BenchmarkCNN(object):
         f.write("Step: %d\tTime: %s\n" % (local_step, end_time - start_time))
         f.close()
         f = open(os.path.join(FLAGS.checkpoint_dir, "times.log"), 'a')
-        sv.saver.save(sess, checkpoint_path, global_step=tf.add(global_step, global_step_increment))
+        sv.saver.save(sess, checkpoint_path, global_step=local_step)
         log_fn("Saved checkpoint after %d epoch(s) to %s..." % (epoch, directory))
         sys.stdout.flush()
         start_time = time.time()
