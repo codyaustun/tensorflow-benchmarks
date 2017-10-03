@@ -3,8 +3,8 @@ import os
 import subprocess
 import sys
 
-def main(checkpoints_path, command, start_cnt):
-  cnt = start_cnt
+def main(checkpoints_path, command, num_images, batch_size, start_epoch):
+  epoch = start_epoch
 
   times = {}
   cum_time = 0.0
@@ -18,14 +18,14 @@ def main(checkpoints_path, command, start_cnt):
         cum_time += time
         times[step] = cum_time
 
-  print("Time (in secs)\tNumber of minibatches\tTop 1 accuracy\tTop 5 accuracy")
+  print("Time (in secs)\tEpoch\tTop 1 accuracy\tTop 5 accuracy")
   while True:
-    ckpt_path = ("%5d" % cnt).replace(' ', '0')
+    ckpt_path = ("%5d" % epoch).replace(' ', '0')
     full_ckpt_path = os.path.join(checkpoints_path, ckpt_path)
     if not os.path.exists(full_ckpt_path):
       break
     if len(os.listdir(full_ckpt_path)) <= 2:
-      cnt += 1
+      epoch += 1
       continue
     full_command = command + " --checkpoint_dir=%s 2>/dev/null" % full_ckpt_path
     output = subprocess.check_output(full_command, shell=True)
@@ -42,10 +42,10 @@ def main(checkpoints_path, command, start_cnt):
                 time = times[step + i - 100]
         if time is None:
             raise Exception("Could not find step %d in times.log" % step)
-        stats = [time, step, precision_at_1, recall_at_5]
+        stats = [time, epoch, precision_at_1, recall_at_5]
         print("\t".join([str(stat) for stat in stats]))
         sys.stdout.flush()
-    cnt += 1
+    epoch += 1
 
 
 if __name__ == '__main__':
@@ -56,10 +56,10 @@ if __name__ == '__main__':
                       help="Path to dumped model checkpoints")
   parser.add_argument('-c', "--command", type=str, required=True,
                       help="Command to evaluate each individual checkpoint")
-  parser.add_argument('-s', "--start_cnt", type=int, default=1,
+  parser.add_argument('-s', "--start_epoch", type=int, default=1,
                       help="Count to start evaluating checkpoints from")
 
   cmdline_args = parser.parse_args()
   opt_dict = vars(cmdline_args)
 
-  main(opt_dict["checkpoints_path"], opt_dict["command"], opt_dict["start_cnt"])
+  main(opt_dict["checkpoints_path"], opt_dict["command"], opt_dict["start_epoch"])
