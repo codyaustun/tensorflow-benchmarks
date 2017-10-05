@@ -3,7 +3,7 @@ import os
 import subprocess
 import sys
 
-def main(checkpoints_path, command, num_images, batch_size, start_epoch):
+def main(checkpoints_path, command, start_epoch):
   epoch = start_epoch
 
   times = {}
